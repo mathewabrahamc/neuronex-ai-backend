@@ -1,8 +1,9 @@
 import os
+import re
 import openai
 from flask import Flask, request, jsonify
-import re
 
+# Set API key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
@@ -18,7 +19,9 @@ def evaluate():
         answer = qdata.get("answer", "")
         questionDetails = qdata.get("questionDetails", {})
         evalConfig = qdata.get("evaluationConfig", {})
+
         modelAnswer = questionDetails.get("modelAnswer", "")
+        questionText = questionDetails.get("questionText", "")
         max_score = evalConfig.get("max_score", 10)
         criteria = evalConfig.get("criteria", "")
         instructions = evalConfig.get("instructions", "")
@@ -53,6 +56,7 @@ Feedback: (One line improvement)
                 max_tokens=max_tokens,
             )
             reply = response.choices[0].message.content
+
             score_match = re.search(r"Score\s*[:\-]?\s*(\d+)", reply)
             feedback_match = re.search(r"Feedback\s*[:\-]?\s*(.*)", reply)
 
@@ -62,6 +66,7 @@ Feedback: (One line improvement)
             result["questionscore"][qid] = score
             result["questionfeedback"][qid] = feedback
             total_score += score
+
         except Exception as e:
             result["questionscore"][qid] = 0
             result["questionfeedback"][qid] = f"Evaluation error: {str(e)}"
