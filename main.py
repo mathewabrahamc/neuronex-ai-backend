@@ -53,8 +53,8 @@ Feedback: (One line improvement)
                 max_tokens=max_tokens,
             )
             reply = response.choices[0].message.content
-            score_match = re.search(r"Score\\s*[:\\-]?\\s*(\\d+)", reply)
-            feedback_match = re.search(r"Feedback\\s*[:\\-]?\\s*(.*)", reply)
+            score_match = re.search(r"Score\s*[:\-]?\s*(\d+)", reply)
+            feedback_match = re.search(r"Feedback\s*[:\-]?\s*(.*)", reply)
 
             score = int(score_match.group(1)) if score_match else 0
             feedback = feedback_match.group(1).strip() if feedback_match else "No feedback"
