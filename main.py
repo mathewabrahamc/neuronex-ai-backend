@@ -2,11 +2,13 @@ import os
 import re
 import openai
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 
 # Set API key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
+CORS(app, origins="*")  # Allow all origins, or restrict to specific frontend URL
 
 @app.route("/evaluate", methods=["POST"])
 def evaluate():
