@@ -3,7 +3,7 @@ import openai
 import re
 import os
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY") 
 
 app = Flask(__name__)
 
@@ -47,7 +47,7 @@ Feedback: (One line improvement)
 """
 
         try:
-            response = client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
