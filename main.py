@@ -71,6 +71,9 @@ Feedback: (One line improvement)
                 max_tokens=max_tokens
             )
 
+            # Debug log for usage data
+            print(f"🔍 Usage debug: {response.usage}")
+
             reply = response.choices[0].message.content
 
             score_match = re.search(r"Score\s*[:\-]?\s*(\d+)", reply)
@@ -83,12 +86,21 @@ Feedback: (One line improvement)
             result["questionfeedback"][qid] = feedback
             total_score += score
 
-            # Store token usage per question
-            result["usage"][qid] = {
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens
-            }
+            # Safe extraction of token usage
+            try:
+                usage_data = response.usage
+                result["usage"][qid] = {
+                    "prompt_tokens": getattr(usage_data, "prompt_tokens", 0),
+                    "completion_tokens": getattr(usage_data, "completion_tokens", 0),
+                    "total_tokens": getattr(usage_data, "total_tokens", 0)
+                }
+            except Exception as e:
+                print(f"❌ Error extracting usage: {e}")
+                result["usage"][qid] = {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                }
 
         except Exception as e:
             result["questionscore"][qid] = 0
