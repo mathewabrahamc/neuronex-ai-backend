@@ -1,24 +1,32 @@
 import os
 import re
-import openai
+from typing import Dict, Any
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
+from openai import OpenAI
 
-# Set API key from environment
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
+# Initialize Flask app and CORS
 app = Flask(__name__)
-CORS(app, origins="*")  # Allow all origins, or restrict to specific frontend URL
+CORS(app, origins="*")
+
+# Validate and initialize OpenAI client
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise EnvironmentError("OPENAI_API_KEY environment variable is not set.")
+client = OpenAI(api_key=api_key)
+
+print(f"API Key: {api_key}")
+print(f"Client: {client}")
 
 @app.route("/evaluate", methods=["POST"])
-def evaluate():
-    data = request.get_json()
-    questions = data.get("questions", {})
-    result = {
+def evaluate() -> Any:
+    data: Dict[str, Any] = request.get_json()
+    questions: Dict[str, Any] = data.get("questions", {})
+    result: Dict[str, Any] = {
         "questionscore": {},
         "questionfeedback": {},
         "score": 0,
-        "usage": {}  # Add usage dictionary
+        "usage": {}
     }
     total_score = 0
 
@@ -56,12 +64,13 @@ Feedback: (One line improvement)
 """
 
         try:
-            response = openai.ChatCompletion.create(  # Corrected capitalization
+            response = client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
-                max_tokens=max_tokens,
+                max_tokens=max_tokens
             )
+
             reply = response.choices[0].message.content
 
             score_match = re.search(r"Score\s*[:\-]?\s*(\d+)", reply)
@@ -74,15 +83,26 @@ Feedback: (One line improvement)
             result["questionfeedback"][qid] = feedback
             total_score += score
 
-            # ✅ Store token usage per question
-            result["usage"][qid] = response.get("usage", {})
+            # Store token usage per question
+            result["usage"][qid] = {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens
+            }
 
         except Exception as e:
             result["questionscore"][qid] = 0
             result["questionfeedback"][qid] = f"Evaluation error: {str(e)}"
-            result["usage"][qid] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            result["usage"][qid] = {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0
+            }
 
     result["score"] = total_score
+    print(f"Prompt: {prompt}")
+    print(f"Response: {response}")
+    print(f"Result: {result}")
     return jsonify(result)
 
 if __name__ == "__main__":
