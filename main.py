@@ -14,7 +14,12 @@ CORS(app, origins="*")  # Allow all origins, or restrict to specific frontend UR
 def evaluate():
     data = request.get_json()
     questions = data.get("questions", {})
-    result = {"questionscore": {}, "questionfeedback": {}, "score": 0}
+    result = {
+        "questionscore": {},
+        "questionfeedback": {},
+        "score": 0,
+        "usage": {}  # Add usage dictionary
+    }
     total_score = 0
 
     for qid, qdata in questions.items():
@@ -51,7 +56,7 @@ Feedback: (One line improvement)
 """
 
         try:
-            response = openai.chat.completions.create(
+            response = openai.ChatCompletion.create(  # Corrected capitalization
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
@@ -69,9 +74,13 @@ Feedback: (One line improvement)
             result["questionfeedback"][qid] = feedback
             total_score += score
 
+            # ✅ Store token usage per question
+            result["usage"][qid] = response.get("usage", {})
+
         except Exception as e:
             result["questionscore"][qid] = 0
             result["questionfeedback"][qid] = f"Evaluation error: {str(e)}"
+            result["usage"][qid] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     result["score"] = total_score
     return jsonify(result)
