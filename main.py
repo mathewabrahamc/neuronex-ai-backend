@@ -5,9 +5,19 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from openai import OpenAI
 
-# Initialize Flask app and CORS
+# Initialize Flask app
 app = Flask(__name__)
-CORS(app, origins="*")
+
+# ✅ Allow all origins for development
+CORS(app, origins="*", supports_credentials=True)
+
+# ✅ Manually handle CORS headers after each response
+@app.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")  # You can later restrict to specific domains
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+    return response
 
 # Validate and initialize OpenAI client
 api_key = os.getenv("OPENAI_API_KEY")
